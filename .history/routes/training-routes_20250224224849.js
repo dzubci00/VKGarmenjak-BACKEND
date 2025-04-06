@@ -1,0 +1,26 @@
+const express = require("express");
+const { check } = require("express-validator");
+const trainingsController = require("../controllers/trainings-controller");
+const checkAuth = require("../middleware/check-auth");
+
+const router = express.Router();
+
+//router.use(checkAuth);
+
+router.post(
+    "/add-training",
+    [
+      check("date").not().isEmpty(),
+      check("time").not().isEmpty(),
+      check("location").not().isEmpty(),
+    ],
+    trainingsController.addTraining
+  );
+  
+router.get("/", trainingsController.getTrainings);
+router.patch("/signup/:trainingId", trainingsController.signUpForTraining);
+router.patch("/cancel/:trainingId", trainingsController.cancelTraining);
+router.delete("/:trainingId", trainingsController.deleteTraining);
+
+module.exports = router;
+

@@ -1,0 +1,8 @@
+{
+  "env": {
+    "DB_USER": "dzubci00",
+    "DB_PASSWORD": "Ki73085K",
+    "DB_NAME": "garmenjakDB",
+    "JWT_KEY": "supersecret_dont_share"
+  }
+}
