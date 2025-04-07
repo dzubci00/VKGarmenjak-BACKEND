@@ -5,6 +5,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+require("dotenv").config();
 
 const placesRoutes = require("./routes/places-routes");
 const usersRoutes = require("./routes/users-routes");
@@ -66,7 +67,7 @@ app.use((error, req, res, next) => {
 
 mongoose
   .connect(
-    `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@garmenjak.gd4oy.mongodb.net/${process.env.DB_NAME}`
+    `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@garmenjak.gd4oy.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`
   )
 
   .then(() => {
