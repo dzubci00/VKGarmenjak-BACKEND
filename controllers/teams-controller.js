@@ -29,6 +29,9 @@ const addTeam = async (req, res, next) => {
 
   const { teamName } = req.body;
 
+  // Cloudinary URL
+  const imageUrl = req.file?.path;
+
   try {
     // Provjera postoji li već turnir s istim imenom i datumom
     const existingTeam = await Team.findOne({ teamName });
@@ -39,6 +42,7 @@ const addTeam = async (req, res, next) => {
     // Kreiranje novog turnira sa praznim poretkom ekipa
     const team = new Team({
       teamName,
+      image: imageUrl || "", // Sprema se URL slike s Cloudinaryja
       pointsPerTournament: [], // Prazan niz, popunit će se kasnije
     });
 

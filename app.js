@@ -53,18 +53,20 @@ app.use((req, res, next) => {
 });
 
 app.use((error, req, res, next) => {
-  if (req.file) {
+  if (req.file && req.file.path && process.env.NODE_ENV !== "production") {
+    // Briši samo ako je lokalna slika (u dev okruženju)
     fs.unlink(req.file.path, (err) => {
-      console.log(err);
+      if (err) console.log("Failed to delete uploaded file:", err);
     });
   }
+
   if (res.headerSent) {
     return next(error);
   }
+
   res.status(error.code || 500);
   res.json({ message: error.message || "An unknown error occurred!" });
 });
-
 mongoose
   .connect(
     `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@garmenjak.gd4oy.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`

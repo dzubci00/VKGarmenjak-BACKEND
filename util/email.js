@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendVerificationEmail = async (email, verificationToken) => {
-  const verificationUrl = `http://localhost:5000/api/users/verify-email/${verificationToken}`;
+  const verificationUrl = `https://vkgarmenjak-backend.onrender.com/api/users/verify-email/${verificationToken}`;
   const mailOptions = {
     from: "donat.zubcic@gmail.com", // Your Gmail address
     to: email,

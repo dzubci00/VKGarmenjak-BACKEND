@@ -10,7 +10,7 @@ const getTournaments = async (req, res, next) => {
   try {
     tournaments = await Tournament.find({}).populate(
       "standings.teamId",
-      "teamName"
+      "teamName image"
     );
   } catch (err) {
     const error = new HttpError(
@@ -49,7 +49,7 @@ const addTournamentAndTeams = async (req, res, next) => {
     // Kreiranje standings liste sa teamId i teamName
     const standings = foundTeams.map((team) => ({
       teamId: team._id,
-      teamName: team.teamName, // Dodajemo i teamName
+      teamName: team.teamName,
       position: 0, // Svi timovi startuju od 0
       points: 0, // Svi timovi startuju od 0
     }));
@@ -67,6 +67,7 @@ const addTournamentAndTeams = async (req, res, next) => {
       tournament,
     });
   } catch (err) {
+    /* console.log("Greška prilikom dodavanja turnira:", err);  */ // 👈 dodaj ovo
     return next(new HttpError("Something went wrong. Try again later.", 500));
   }
 };
