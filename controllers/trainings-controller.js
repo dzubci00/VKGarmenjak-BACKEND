@@ -1,17 +1,29 @@
 const HttpError = require("../models/http-error");
 const Training = require("../models/training");
 const User = require("../models/user");
-const { validationResult } = require('express-validator');
+const { validationResult } = require("express-validator");
 
 const addTraining = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return next(new HttpError('Invalid input. Double-check your details and try again!', 422));
+    return next(
+      new HttpError(
+        "Invalid input. Double-check your details and try again!",
+        422
+      )
+    );
   }
 
   const { date, time, location, trainingType } = req.body;
 
-  const newTraining = new Training({ date, time, location, trainingType, players: [], unregisteredPlayers: [] });
+  const newTraining = new Training({
+    date,
+    time,
+    location,
+    trainingType,
+    players: [],
+    unregisteredPlayers: [],
+  });
 
   try {
     await newTraining.save();
@@ -23,7 +35,9 @@ const addTraining = async (req, res, next) => {
 
 const getTrainings = async (req, res, next) => {
   try {
-    const trainings = await Training.find().populate("players.playerId", "name surname");
+    const trainings = await Training.find()
+      .populate("players.playerId", "name surname")
+      .sort({ date: 1, time: 1 }); // najnoviji prvi
 
     res.json({
       trainings: trainings.map((training) =>
@@ -31,10 +45,11 @@ const getTrainings = async (req, res, next) => {
       ),
     });
   } catch (err) {
-    return next(new HttpError("Fetching trainings failed, please try again later.", 500));
+    return next(
+      new HttpError("Fetching trainings failed, please try again later.", 500)
+    );
   }
 };
-
 
 const signUpForTraining = async (req, res, next) => {
   const trainingId = req.params.trainingId;
@@ -54,9 +69,13 @@ const signUpForTraining = async (req, res, next) => {
     }
 
     // ✅ 3. Provjera je li korisnik već prijavljen
-    const alreadySignedUp = training.players.some((player) => player.playerId.toString() === userId);
+    const alreadySignedUp = training.players.some(
+      (player) => player.playerId.toString() === userId
+    );
     if (alreadySignedUp) {
-      return res.status(422).json({ message: "Player is already signed up for this training." });
+      return res
+        .status(422)
+        .json({ message: "Player is already signed up for this training." });
     }
 
     const user = await User.findById(userId);
@@ -75,13 +94,17 @@ const signUpForTraining = async (req, res, next) => {
   }
 };
 
-
 const signUpUnregisteredPlayer = async (req, res, next) => {
   const trainingId = req.params.trainingId;
 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return next(new HttpError("Invalid input. Double-check your details and try again!", 422));
+    return next(
+      new HttpError(
+        "Invalid input. Double-check your details and try again!",
+        422
+      )
+    );
   }
 
   const { name } = req.body;
@@ -109,7 +132,9 @@ const signUpUnregisteredPlayer = async (req, res, next) => {
     training.unregisteredPlayers.push({ name });
     await training.save();
 
-    res.status(200).json({ message: "Unregistered player signed up for training" });
+    res
+      .status(200)
+      .json({ message: "Unregistered player signed up for training" });
   } catch (err) {
     return next(new HttpError("Could not sign up, try again.", 500));
   }
@@ -124,9 +149,13 @@ const cancelTraining = async (req, res, next) => {
     if (!training) return next(new HttpError("Training not found.", 404));
 
     // Provjera je li korisnik već u listi igrača
-    const playerIndex = training.players.findIndex(player => player.playerId.toString() === userId);
+    const playerIndex = training.players.findIndex(
+      (player) => player.playerId.toString() === userId
+    );
     if (playerIndex === -1) {
-      return next(new HttpError("Player is not signed up for this training.", 400));
+      return next(
+        new HttpError("Player is not signed up for this training.", 400)
+      );
     }
 
     // Uklanjanje igrača
@@ -150,13 +179,19 @@ const cancelTrainingUnregisteredPlayer = async (req, res, next) => {
     }
 
     // Provjera postoji li igrač na popisu
-    const playerExists = training.unregisteredPlayers.some(player => player.name === name);
+    const playerExists = training.unregisteredPlayers.some(
+      (player) => player.name === name
+    );
     if (!playerExists) {
-      return next(new HttpError("Player not found in training signup list.", 404));
+      return next(
+        new HttpError("Player not found in training signup list.", 404)
+      );
     }
 
     // Uklanjanje igrača
-    training.unregisteredPlayers = training.unregisteredPlayers.filter(player => player.name !== name);
+    training.unregisteredPlayers = training.unregisteredPlayers.filter(
+      (player) => player.name !== name
+    );
     await training.save();
 
     res.status(200).json({ message: "Player canceled training signup" });
@@ -193,32 +228,30 @@ const getMonthlyAttendance = async (req, res, next) => {
   try {
     // Ukupno treninga u mjesecu
     const totalTrainings = await Training.countDocuments({
-      date: { $gte: firstDay, $lte: lastDay }
+      date: { $gte: firstDay, $lte: lastDay },
     });
 
     // Broj treninga na kojima je korisnik prisustvovao
     const attendanceCount = await Training.countDocuments({
       date: { $gte: firstDay, $lte: lastDay },
-      "players.playerId": userId
+      "players.playerId": userId,
     });
 
-    res.json({ 
-      userId, 
-      attendanceCount, 
-      totalTrainings 
+    res.json({
+      userId,
+      attendanceCount,
+      totalTrainings,
     });
   } catch (err) {
     return next(new HttpError("Fetching attendance failed, try again.", 500));
   }
 };
 
-
-
 exports.addTraining = addTraining;
 exports.getTrainings = getTrainings;
 exports.signUpForTraining = signUpForTraining;
-exports.signUpUnregisteredPlayer=signUpUnregisteredPlayer;
+exports.signUpUnregisteredPlayer = signUpUnregisteredPlayer;
 exports.cancelTraining = cancelTraining;
-exports.cancelTrainingUnregisteredPlayer=cancelTrainingUnregisteredPlayer;
+exports.cancelTrainingUnregisteredPlayer = cancelTrainingUnregisteredPlayer;
 exports.deleteTraining = deleteTraining;
-exports.getMonthlyAttendance=getMonthlyAttendance;
+exports.getMonthlyAttendance = getMonthlyAttendance;
