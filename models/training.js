@@ -5,9 +5,10 @@ const trainingSchema = new mongoose.Schema({
   time: { type: String, required: true },
   location: { type: String, required: true },
   trainingType: { type: String, required: true },
-  players: [{ playerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" } }],
-  unregisteredPlayers: [{ name: { type: String, required: true } }]
+  players: [
+    { playerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" } },
+  ],
+  unregisteredPlayers: [{ name: { type: String, required: true } }],
 });
-
 
 module.exports = mongoose.model("Training", trainingSchema);

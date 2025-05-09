@@ -3,6 +3,14 @@ const Training = require("../models/training");
 const User = require("../models/user");
 const { validationResult } = require("express-validator");
 
+const isValidTimeFormat = (timeStr) =>
+  /^([0-1]\d|2[0-3]):([0-5]\d)$/.test(timeStr);
+
+const isFutureDateTime = (dateStr, timeStr) => {
+  const trainingDateTime = new Date(`${dateStr}T${timeStr}`);
+  return !isNaN(trainingDateTime) && trainingDateTime > new Date();
+};
+
 const addTraining = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -15,6 +23,30 @@ const addTraining = async (req, res, next) => {
   }
 
   const { date, time, location, trainingType } = req.body;
+
+  // 1. Validacija formata vremena
+  if (!isValidTimeFormat(time)) {
+    return next(new HttpError("Vrijeme mora biti u formatu HH:mm.", 422));
+  }
+
+  // 2. Validacija da je datum i vrijeme u budućnosti
+  if (!isFutureDateTime(date, time)) {
+    return next(
+      new HttpError("Datum i vrijeme moraju biti u budućnosti.", 422)
+    );
+  }
+
+  // 3. Provjera duplikata
+  try {
+    const existingTraining = await Training.findOne({ date, time, location });
+    if (existingTraining) {
+      return next(
+        new HttpError("Trening na ovoj lokaciji i vremenu već postoji.", 409)
+      );
+    }
+  } catch (err) {
+    return next(new HttpError("Greška pri provjeri postojećih treninga.", 500));
+  }
 
   const newTraining = new Training({
     date,
@@ -37,13 +69,33 @@ const getTrainings = async (req, res, next) => {
   try {
     const trainings = await Training.find()
       .populate("players.playerId", "name surname")
-      .sort({ date: 1, time: 1 }); // najnoviji prvi
+      .sort({ date: 1, time: 1 }); // po datumu i vremenu
 
-    res.json({
-      trainings: trainings.map((training) =>
-        training.toObject({ getters: true })
-      ),
+    const getStatus = (dateStr, timeStr) => {
+      const date = new Date(dateStr); // primjer: 2025-04-11T00:00:00.000Z
+      const [hours, minutes] = timeStr.split(":").map(Number);
+
+      const start = new Date(date);
+      start.setHours(hours);
+      start.setMinutes(minutes);
+      start.setSeconds(0);
+      start.setMilliseconds(0);
+
+      const now = new Date();
+      const end = new Date(start.getTime() + 90 * 60000); // +1h30m
+
+      if (now < start) return "A"; // Aktivan
+      if (now >= start && now <= end) return "UT"; // U tijeku
+      return "Z"; // Završeno
+    };
+
+    const trainingsWithStatus = trainings.map((training) => {
+      const obj = training.toObject({ getters: true });
+      obj.status = getStatus(training.date, training.time);
+      return obj;
     });
+
+    res.json({ trainings: trainingsWithStatus });
   } catch (err) {
     return next(
       new HttpError("Fetching trainings failed, please try again later.", 500)
